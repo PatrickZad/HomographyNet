@@ -6,11 +6,11 @@ def net_block(in_channel, out_channel, index):
     if index % 2 == 0:
         return nn.Sequential(nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=1, padding=1),
                              nn.BatchNorm2d(out_channel),
-                             nn.ReLU())
+                             nn.ReLU(True))
     else:
         return nn.Sequential(nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=1, padding=1),
                              nn.BatchNorm2d(out_channel),
-                             nn.ReLU(),
+                             nn.ReLU(True),
                              nn.MaxPool2d(kernel_size=2, stride=2))
 
 

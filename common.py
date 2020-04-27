@@ -38,14 +38,14 @@ class Cfg128(CommonCfg):
     def __init__(self):
         super(Cfg128, self).__init__(128, 128)
         self.conv_out_channels = [self.in_channel] + [64, 64, 64, 64, 128, 128, 128, 128]
-        self.fc_in = [(self.height_in // 8) * (self.width_in // 8) * self.conv_out_channel[-1], 1024]
+        self.fc_in = (self.height_in // 8) * (self.width_in // 8) * self.conv_out_channels[-1]
 
 
 class Cfg256(CommonCfg):
     def __init__(self):
         super(Cfg256).__init__(256, 256)
         self.conv_channels = [self.in_channel] + [64, 64, 128, 128, 128, 128, 256, 256, 256, 256]
-        self.fc_in = (self.height_in // 16) * (self.width_inh // 16) * self.conv_out_channel[-1]
+        self.fc_in = (self.height_in // 16) * (self.width_inh // 16) * self.conv_out_channels[-1]
 
 
 def rand(a=0, b=1, size=None):
