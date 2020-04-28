@@ -21,7 +21,7 @@ class CommonCfg:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.max_epoch = 256
         self.save_period = 10
-        self.log_period=50
+        self.log_period = 50
 
     def get_optimizer(self, params):
         return torch.optim.SGD(params, lr=self.base_lr, momentum=self.momentum)
@@ -38,7 +38,7 @@ class Cfg128(CommonCfg):
     def __init__(self):
         super(Cfg128, self).__init__(128, 128)
         self.conv_out_channels = [self.in_channel] + [64, 64, 64, 64, 128, 128, 128, 128]
-        self.fc_in = (self.height_in // 8) * (self.width_in // 8) * self.conv_out_channels[-1]
+        self.fc_in = (self.height_in // 16) * (self.width_in // 16) * self.conv_out_channels[-1]
 
 
 class Cfg256(CommonCfg):
@@ -49,7 +49,10 @@ class Cfg256(CommonCfg):
 
 
 def rand(a=0, b=1, size=None):
-    return np.random.rand(*size) * (b - a) + a
+    if size is not None:
+        return np.random.rand(*size) * (b - a) + a
+    else:
+        return np.random.rand() * (b - a) + a
 
 
 def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
@@ -57,7 +60,8 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     hue = rand(-hue, hue)
     sat = rand(1, sat) if rand() < .5 else 1 / rand(1, sat)
     val = rand(1, val) if rand() < .5 else 1 / rand(1, val)
-    x = cv2.cvtColor(rgb_array / 255., cv2.COLOR_RGB2HSV)
+    float_img = np.float32(rgb_array) / 255.
+    x = cv2.cvtColor(float_img, cv2.COLOR_RGB2HSV)
     x[..., 0] += hue
     x[..., 0][x[..., 0] > 1] -= 1
     x[..., 0][x[..., 0] < 0] += 1
@@ -68,15 +72,44 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     return cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
 
 
-def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box):
-    corners = np.float32([[0, 0], [img.shape[1] - 1, 0], [
-        0, img.shape[0] - 1], [img.shape[1] - 1, img.shape[0] - 1]])
-    warpped_corners = np.matmul(corners, homo_mat.T)
+global count
+count = 1
+
+
+def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
+    global count
+
+    corners = np.float32([[0, 0, 1], [img.shape[1] - 1, 0, 1],
+                          [img.shape[1] - 1, img.shape[0] - 1, 1],
+                          [0, img.shape[0] - 1, 1]])
+    scaled_homo_mat = homo_mat / homo_mat[2][2]
+    warpped_corners = np.matmul(corners, scaled_homo_mat.T)
+    warpped_corners /= warpped_corners[:, 2:]
+    warpped_corners = np.int32(warpped_corners[:, :-1])
     x, y, w, h = cv2.boundingRect(warpped_corners)
-    translation_corner = (warpcrop_box[1] - x, warpcrop_box[0] - y)
-    warpped_img = cv2.warpPerspective(img, homo_mat, (w, h))
-    return warpped_img[translation_corner[1]:translation_corner[1] + warpcrop_box[1],
-           translation_corner[0]:translation_corner[0] + warpcrop_box[0], :]
+    translation_corner = (warpcrop_box[0] - x, warpcrop_box[1] - y)
+    translation_mat = np.eye(3)
+    translation_mat[0][2], translation_mat[1][2] = -x, -y
+    warp_mat = np.matmul(translation_mat, scaled_homo_mat)
+    trans_warp_corners = np.matmul(corners, warp_mat.T)
+    trans_warp_corners /= trans_warp_corners[:, 2:]
+    warpped_img = cv2.warpPerspective(img, warp_mat, (w, h))
+    crop = warpped_img[translation_corner[1]:translation_corner[1] + warpcrop_box[3],
+           translation_corner[0]:translation_corner[0] + warpcrop_box[2], :].copy()
+    crop_h, crop_w = crop.shape[0], crop.shape[1]
+    warpB = np.matmul(np.concatenate([polyB, np.ones((4, 1))], axis=-1), warp_mat.T)
+    warpB /= warpB[:, 2:]
+    if crop_h != warpcrop_box[3] or crop_w != warpcrop_box[2]:
+        print('Not valid mat !')
+        return None
+    '''img = cv2.polylines(img, polyB.reshape((-1, 1, 2)), isClosed=True, color=(0, 255, 0), lineType=cv2.LINE_8,
+                        thickness=2)
+    img = cv2.polylines(img, polyA.reshape((-1, 1, 2)), isClosed=True, color=(0, 0, 255), lineType=cv2.LINE_8,
+                        thickness=2)
+    cv2.imwrite('./experiments/' + str(count) + 'A.png', img)
+    cv2.imwrite('./experiments/' + str(count) + 'B.png', warpped_img)
+    count += 1'''
+    return crop
 
 
 def random_erasing(img, prob=0.5, sl=0.02, sh=0.4, r1=0.3, mean=(0.4914, 0.4822, 0.4465), max_iter=100):
@@ -91,13 +124,11 @@ def random_erasing(img, prob=0.5, sl=0.02, sh=0.4, r1=0.3, mean=(0.4914, 0.4822,
         w = int(round((region_area / aspect_ratio) ** 0.5))
 
         if w < img.shape[1] and h < img.shape[0]:
-            x1 = np.random.randint(0, img.size()[1] - h)
-            y1 = np.random.randint(0, img.size()[2] - w)
-            if img.size()[0] == 3:
-                img[0, x1:x1 + h, y1:y1 + w] = mean[0]
-                img[1, x1:x1 + h, y1:y1 + w] = mean[1]
-                img[2, x1:x1 + h, y1:y1 + w] = mean[2]
+            y1 = np.random.randint(0, img.shape[0] - h)
+            x1 = np.random.randint(0, img.shape[1] - w)
+            if img.shape[-1] == 3:
+                img[y1:y1 + h, x1: x1 + w, :] = np.array(mean)
             else:
-                img[0, x1:x1 + h, y1:y1 + w] = mean[0]
+                img[y1:y1 + h, x1:x1 + w, :] = np.array([mean[0]])
             return img
     return img

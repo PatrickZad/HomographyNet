@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch
 
+torch.set_default_tensor_type(torch.DoubleTensor)
+
 
 def net_block(in_channel, out_channel, index):
     if index % 2 == 0:
@@ -29,5 +31,5 @@ class HomographyNet(nn.Module):
 
     def forward(self, img_pair):
         conv_out = self.conv_component(img_pair)
-        feature1d = torch.reshape(conv_out, (-1,))
+        feature1d = torch.reshape(conv_out, (conv_out.shape[0], -1))
         return self.fc1_2(feature1d)

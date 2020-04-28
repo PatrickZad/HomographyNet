@@ -1,7 +1,5 @@
 import os
 import model
-import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
@@ -51,7 +49,7 @@ def log_training_loss(trainer):
         ITER = 0
 
 
-@trainer.on(Events.EPOCH_STARTED)
+@trainer.on(Events.EPOCH_COMPLETED)
 def adjust_lr(trainer):
     scheduler.step()
 
