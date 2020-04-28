@@ -100,7 +100,7 @@ def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
     warpB = np.matmul(np.concatenate([polyB, np.ones((4, 1))], axis=-1), warp_mat.T)
     warpB /= warpB[:, 2:]
     if crop_h != warpcrop_box[3] or crop_w != warpcrop_box[2]:
-        print('Not valid mat !')
+        print('Regenerate random patch !')
         return None
     '''img = cv2.polylines(img, polyB.reshape((-1, 1, 2)), isClosed=True, color=(0, 255, 0), lineType=cv2.LINE_8,
                         thickness=2)
