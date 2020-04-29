@@ -61,9 +61,9 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     hue = rand(-hue, hue)
     sat = rand(1, sat) if rand() < .5 else 1 / rand(1, sat)
     val = rand(1, val) if rand() < .5 else 1 / rand(1, val)
-    #cv_float_img = np.float32(rgb_array) / 255.
+    # cv_float_img = np.float32(rgb_array) / 255.
     float_img = util.img_as_float(rgb_array)
-    #x = cv2.cvtColor(float_img, cv2.COLOR_RGB2HSV)
+    # x = cv2.cvtColor(float_img, cv2.COLOR_RGB2HSV)
     x = color.rgb2hsv(float_img)
     x[..., 0] += hue
     x[..., 0][x[..., 0] > 1] -= 1
@@ -72,7 +72,7 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     x[..., 2] *= val
     x[x > 1] = 1
     x[x < 0] = 0
-    #cv_result = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
+    # cv_result = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
     result = color.hsv2rgb(x)
     return result
 
@@ -104,8 +104,8 @@ def sk_warpcrop(img, homo_mat, warpcrop_box):
     if crop_h != warpcrop_box[3] or crop_w != warpcrop_box[2]:
         print('Regenerate random patch !')
         return None
-    io.imsave('./experiments/' + str(count) + 'A.png', img)
-    io.imsave('./experiments/' + str(count) + 'B.png', warpped_img)
+    '''io.imsave('./experiments/' + str(count) + 'A.png', img, check_contrast=False)
+    io.imsave('./experiments/' + str(count) + 'B.png', warpped_img, check_contrast=False)'''
     count += 1
     return crop
 
@@ -152,7 +152,7 @@ def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
     return crop
 
 
-def random_erasing(img, prob=0.5, sl=0.02, sh=0.4, r1=0.3, mean=(0.4914, 0.4822, 0.4465), max_iter=100):
+def random_erasing(img, prob=0.5, sl=0.02, sh=0.15, r1=0.3, mean=(0.4914, 0.4822, 0.4465), max_iter=100):
     if np.random.uniform(0, 1) >= prob:
         return img
     for i in range(max_iter):

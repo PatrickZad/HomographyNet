@@ -99,8 +99,8 @@ class ResiscDataset(Dataset):
         '''cv2.imwrite('./experiments/' + str(iter) + 'A.png', patchA)
 
         cv2.imwrite('./experiments/' + str(iter) + 'B.png', patchB)'''
-        io.imsave('./experiments/' + str(iter) + 'pA.png', patchA)
-        io.imsave('./experiments/' + str(iter) + 'pB.png', patchB)
+        '''io.imsave('./experiments/' + str(iter) + 'pA.png', patchA, check_contrast=False)
+        io.imsave('./experiments/' + str(iter) + 'pB.png', patchB, check_contrast=False)'''
         # color distortion
         # patchA = cv2.cvtColor(patchA, cv2.COLOR_BGR2RGB)
         patchA_dst = corlor_distortion(patchA)
@@ -114,8 +114,8 @@ class ResiscDataset(Dataset):
         patchB_exp = np.expand_dims(patchB_gray, axis=2)
         patchA_re = random_erasing(patchA_exp, self.erasing_prob)
         patchB_re = random_erasing(patchB_exp, self.erasing_prob)
-        io.imsave('./experiments/' + str(iter) + 'eA.png', patchA_re[..., 0])
-        io.imsave('./experiments/' + str(iter) + 'eB.png', patchB_re[..., 0])
+        '''io.imsave('./experiments/' + str(iter) + 'eA.png', patchA_re[..., 0], check_contrast=False)
+        io.imsave('./experiments/' + str(iter) + 'eB.png', patchB_re[..., 0], check_contrast=False)'''
         iter += 1
         patchA_tp = patchA_re.transpose((2, 0, 1))
         patchB_tp = patchB_re.transpose((2, 0, 1))
