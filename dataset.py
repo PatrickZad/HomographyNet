@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import cv2
 from common import *
+from skimage import io, transform, color, util
 
 proj_dir = os.getcwd()
 commom_dir = os.path.dirname(proj_dir)
@@ -46,11 +47,12 @@ class ResiscDataset(Dataset):
 
     def __getitem__(self, idx):
         global iter
-        img_array = cv2.imread(os.path.join(self.common_path, self.file_paths[idx]))
-
+        cv_img_array = cv2.imread(os.path.join(self.common_path, self.file_paths[idx]))
+        img_array = io.imread(os.path.join(self.common_path, self.file_paths[idx]))  # h * w *c RGB image array
         # random scale
         scale_factor = rand(self.scale_extent[0], self.scale_extent[1])
-        scaled_img = cv2.resize(img_array, (0, 0), fx=scale_factor, fy=scale_factor)
+        cv_scaled_img = cv2.resize(img_array, (0, 0), fx=scale_factor, fy=scale_factor)
+        scaled_img = transform.rescale(img_array, scale_factor, multichannel=True)
         # random patch
         h, w = scaled_img.shape[0], scaled_img.shape[1]
         x_limit = (self.purtube + self.border_margin,
@@ -63,20 +65,25 @@ class ResiscDataset(Dataset):
         cornersA = np.float32([[corner_x, corner_y], [corner_x + self.patch_size[0] - 1, corner_y],
                                [corner_x + self.patch_size[0] - 1, corner_y + self.patch_size[1] - 1],
                                [corner_x, corner_y + self.patch_size[1] - 1]])
-        h_ab_4p = rand(-self.purtube, self.purtube, size=(4, 2))
-        cornersB = np.float32(cornersA + h_ab_4p)
-        '''cornersA = cornersA.reshape((-1, 1, 2))
-        cornersB = cornersB.reshape((-1, 1, 2))'''
-        h_ab = cv2.getPerspectiveTransform(cornersA, cornersB)
-        h_ab = h_ab / h_ab[2][2]
-        h_ba = np.linalg.inv(h_ab)
-        # h_ba = h_ba / h_ba[2][2]
-        patchA = scaled_img[corner_y:corner_y + self.patch_size[1], corner_x:corner_x + self.patch_size[0], :].copy()
-        patchB = warpcrop_in_same_coordsys(scaled_img, h_ba,
-                                           (corner_x, corner_y, self.patch_size[0], self.patch_size[1]),
-                                           polyA=np.int32(cornersA),
-                                           polyB=np.int32(cornersB))
+        patchB = None
         while patchB is None:
+            h_ab_4p = rand(-self.purtube, self.purtube, size=(4, 2))
+            cornersB = np.float32(cornersA + h_ab_4p)
+            '''cornersA = cornersA.reshape((-1, 1, 2))
+            cornersB = cornersB.reshape((-1, 1, 2))'''
+            h_ab = cv2.getPerspectiveTransform(cornersA, cornersB)
+            h_ab = (transform.estimate_transform('projective', cornersA, cornersB)).params
+            h_ab = h_ab / h_ab[2][2]
+            h_ba = np.linalg.inv(h_ab)
+            h_ba = np.linalg.inv(h_ab)
+            # h_ba = h_ba / h_ba[2][2]
+            patchA = scaled_img[corner_y:corner_y + self.patch_size[1],
+                     corner_x:corner_x + self.patch_size[0], :].copy()
+
+            patchB = sk_warpcrop(scaled_img, h_ba, (corner_x, corner_y, self.patch_size[0], self.patch_size[1]))
+        '''
+        while patchB is None:
+            
             h_ab_4p = rand(-self.purtube, self.purtube, size=(4, 2))
             cornersB = np.float32(cornersA + h_ab_4p)
             h_ab = cv2.getPerspectiveTransform(cornersA, cornersB)
@@ -88,25 +95,32 @@ class ResiscDataset(Dataset):
             patchB = warpcrop_in_same_coordsys(scaled_img, h_ba,
                                                (corner_x, corner_y, self.patch_size[0], self.patch_size[1]),
                                                polyA=np.int32(cornersA),
-                                               polyB=np.int32(cornersB))
+                                               polyB=np.int32(cornersB))'''
         '''cv2.imwrite('./experiments/' + str(iter) + 'A.png', patchA)
 
         cv2.imwrite('./experiments/' + str(iter) + 'B.png', patchB)'''
-        iter += 1
+        io.imsave('./experiments/' + str(iter) + 'pA.png', patchA)
+        io.imsave('./experiments/' + str(iter) + 'pB.png', patchB)
         # color distortion
-        patchA = cv2.cvtColor(patchA, cv2.COLOR_BGR2RGB)
+        # patchA = cv2.cvtColor(patchA, cv2.COLOR_BGR2RGB)
         patchA_dst = corlor_distortion(patchA)
-        patchA_gray = cv2.cvtColor(patchA_dst, cv2.COLOR_RGB2GRAY)
-        patchB_gray = np.float32(cv2.cvtColor(patchB, cv2.COLOR_BGR2GRAY)) / 255
-
+        # patchA_gray = cv2.cvtColor(patchA_dst, cv2.COLOR_RGB2GRAY)
+        patchA_gray = color.rgb2gray(patchA_dst)
+        # patchB_gray = np.float32(cv2.cvtColor(patchB, cv2.COLOR_BGR2GRAY)) / 255
+        patchB_gray = color.rgb2gray(patchB)
+        # patchB_gray = util.img_as_float(patchB_gray)
         # random erasing
         patchA_exp = np.expand_dims(patchA_gray, axis=2)
         patchB_exp = np.expand_dims(patchB_gray, axis=2)
         patchA_re = random_erasing(patchA_exp, self.erasing_prob)
         patchB_re = random_erasing(patchB_exp, self.erasing_prob)
+        io.imsave('./experiments/' + str(iter) + 'eA.png', patchA_re[..., 0])
+        io.imsave('./experiments/' + str(iter) + 'eB.png', patchB_re[..., 0])
+        iter += 1
         patchA_tp = patchA_re.transpose((2, 0, 1))
         patchB_tp = patchB_re.transpose((2, 0, 1))
         data_array = np.concatenate([patchA_tp, patchB_tp], axis=0)
+
         return torch.tensor(data_array, dtype=torch.double), \
                torch.tensor(h_ab_4p, dtype=torch.double).reshape(4 * 2)
 
