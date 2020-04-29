@@ -1,6 +1,7 @@
 import torch
 import cv2
 import numpy as np
+from skimage import color, util, io, transform
 
 
 class CommonCfg:
@@ -60,8 +61,10 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     hue = rand(-hue, hue)
     sat = rand(1, sat) if rand() < .5 else 1 / rand(1, sat)
     val = rand(1, val) if rand() < .5 else 1 / rand(1, val)
-    float_img = np.float32(rgb_array) / 255.
-    x = cv2.cvtColor(float_img, cv2.COLOR_RGB2HSV)
+    #cv_float_img = np.float32(rgb_array) / 255.
+    float_img = util.img_as_float(rgb_array)
+    #x = cv2.cvtColor(float_img, cv2.COLOR_RGB2HSV)
+    x = color.rgb2hsv(float_img)
     x[..., 0] += hue
     x[..., 0][x[..., 0] > 1] -= 1
     x[..., 0][x[..., 0] < 0] += 1
@@ -69,11 +72,42 @@ def corlor_distortion(rgb_array, hue=.1, sat=1.5, val=1.5):
     x[..., 2] *= val
     x[x > 1] = 1
     x[x < 0] = 0
-    return cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
+    #cv_result = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
+    result = color.hsv2rgb(x)
+    return result
 
 
 global count
 count = 1
+
+
+def sk_warpcrop(img, homo_mat, warpcrop_box):
+    global count
+    '''corners = np.float32([[0, 0], [img.shape[1] - 1, 0],
+                          [img.shape[1] - 1, img.shape[0] - 1],
+                          [0, img.shape[0] - 1]])
+    warpped_corners = transform.matrix_transform(corners, homo_mat)
+    warp_ref = np.matmul(np.concatenate([corners, np.ones((4, 1))], axis=-1), homo_mat.T)
+    warp_ref /= warp_ref[:, 2:]
+    trans_x, trans_y = -warpped_corners[:, 0].min(), -warpped_corners[:, 1].min()
+    w, h = int(warpped_corners[:, 0].max() - warpped_corners[:, 0].min() + 1), \
+           int(warpped_corners[:, 1].max() - warpped_corners[:, 1].min() + 1)
+    translation_corner = (warpcrop_box[0] + trans_x, warpcrop_box[1] + trans_y)
+    translation_mat = transform.SimilarityTransform(translation=(trans_x, trans_y)).params
+    warpped_img = transform.warp(img, np.matmul(translation_mat, homo_mat), output_shape=(h, w))
+    crop = warpped_img[translation_corner[1]:translation_corner[1] + warpcrop_box[3],
+           translation_corner[0]:translation_corner[0] + warpcrop_box[2], :].copy()'''
+    warpped_img = transform.warp(img, homo_mat)
+    crop = warpped_img[warpcrop_box[1]:warpcrop_box[1] + warpcrop_box[3],
+           warpcrop_box[0]:warpcrop_box[0] + warpcrop_box[2], :].copy()
+    crop_h, crop_w = crop.shape[0], crop.shape[1]
+    if crop_h != warpcrop_box[3] or crop_w != warpcrop_box[2]:
+        print('Regenerate random patch !')
+        return None
+    io.imsave('./experiments/' + str(count) + 'A.png', img)
+    io.imsave('./experiments/' + str(count) + 'B.png', warpped_img)
+    count += 1
+    return crop
 
 
 def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
@@ -108,7 +142,9 @@ def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
                         thickness=2)
     cv2.imwrite('./experiments/' + str(count) + 'A.png', img)
     cv2.imwrite('./experiments/' + str(count) + 'B.png', warpped_img)
-    count += 1'''
+    '''
+
+    count += 1
     return crop
 
 
