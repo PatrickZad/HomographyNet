@@ -43,6 +43,7 @@ trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer,
 def log_training_loss(trainer):
     global ITER
     ITER += 1
+    print("Epoch[{}] Loss: {:.2f}".format(trainer.state.epoch, trainer.state.output))
     if ITER % cfg.log_period == 0:
         logger.info("Epoch[{}] Loss: {:.2f}".format(trainer.state.epoch, trainer.state.output))
     if len(train_loader) == ITER:
@@ -60,6 +61,8 @@ def log_training_results(trainer):
     metrics = evaluator.state.metrics
     logger.info("Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
                 .format(trainer.state.epoch, metrics['accuracy'], metrics['nll']))
+    print("Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
+          .format(trainer.state.epoch, metrics['accuracy'], metrics['nll']))
 
 
 @trainer.on(Events.EPOCH_COMPLETED)
@@ -68,6 +71,8 @@ def log_validation_results(trainer):
     metrics = evaluator.state.metrics
     logger.info("Validation Results - Epoch: {} "
                 .format(trainer.state.epoch, metrics['esti_error']))
+    print("Validation Results - Epoch: {} "
+          .format(trainer.state.epoch, metrics['esti_error']))
 
 
 trainer.run(train_loader, max_epochs=cfg.max_epoch)

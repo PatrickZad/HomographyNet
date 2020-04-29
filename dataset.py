@@ -89,9 +89,9 @@ class ResiscDataset(Dataset):
                                                (corner_x, corner_y, self.patch_size[0], self.patch_size[1]),
                                                polyA=np.int32(cornersA),
                                                polyB=np.int32(cornersB))
-        cv2.imwrite('./experiments/' + str(iter) + 'A.png', patchA)
+        '''cv2.imwrite('./experiments/' + str(iter) + 'A.png', patchA)
 
-        cv2.imwrite('./experiments/' + str(iter) + 'B.png', patchB)
+        cv2.imwrite('./experiments/' + str(iter) + 'B.png', patchB)'''
         iter += 1
         # color distortion
         patchA = cv2.cvtColor(patchA, cv2.COLOR_BGR2RGB)

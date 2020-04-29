@@ -21,7 +21,7 @@ class CommonCfg:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.max_epoch = 256
         self.save_period = 10
-        self.log_period = 50
+        self.log_period = 10
 
     def get_optimizer(self, params):
         return torch.optim.SGD(params, lr=self.base_lr, momentum=self.momentum)
@@ -93,14 +93,18 @@ def warpcrop_in_same_coordsys(img, homo_mat, warpcrop_box, polyA, polyB):
     warp_mat = np.matmul(translation_mat, scaled_homo_mat)
     trans_warp_corners = np.matmul(corners, warp_mat.T)
     trans_warp_corners /= trans_warp_corners[:, 2:]
-    warpped_img = cv2.warpPerspective(img, warp_mat, (w, h))
+    try:
+        warpped_img = cv2.warpPerspective(img, warp_mat, (w, h))
+    except BaseException as e:
+        # print(e)
+        return None
     crop = warpped_img[translation_corner[1]:translation_corner[1] + warpcrop_box[3],
            translation_corner[0]:translation_corner[0] + warpcrop_box[2], :].copy()
     crop_h, crop_w = crop.shape[0], crop.shape[1]
     warpB = np.matmul(np.concatenate([polyB, np.ones((4, 1))], axis=-1), warp_mat.T)
     warpB /= warpB[:, 2:]
     if crop_h != warpcrop_box[3] or crop_w != warpcrop_box[2]:
-        print('Regenerate random patch !')
+        # print('Regenerate random patch !')
         return None
     '''img = cv2.polylines(img, polyB.reshape((-1, 1, 2)), isClosed=True, color=(0, 255, 0), lineType=cv2.LINE_8,
                         thickness=2)
