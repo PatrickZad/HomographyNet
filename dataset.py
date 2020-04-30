@@ -36,7 +36,7 @@ class AerialVal(Dataset):
 
 class ResiscDataset(Dataset):
     # 128*128 patches
-    def __init__(self, file_path):
+    def __init__(self, file_path,device):
         self.common_path = os.path.join(data_dir, 'NWPU-RESISC45')
         self.file_paths = file_path
         self.patch_size = (128, 128)
@@ -44,6 +44,7 @@ class ResiscDataset(Dataset):
         self.purtube = 32
         self.erasing_prob = 0.5
         self.border_margin = 16
+        self.device=device
 
     def __getitem__(self, idx):
         global iter
@@ -121,8 +122,8 @@ class ResiscDataset(Dataset):
         patchB_tp = patchB_re.transpose((2, 0, 1))
         data_array = np.concatenate([patchA_tp, patchB_tp], axis=0)
 
-        return torch.tensor(data_array, dtype=torch.double), \
-               torch.tensor(h_ab_4p, dtype=torch.double).reshape(4 * 2)
+        return torch.tensor(data_array, dtype=torch.double,device=self.device), \
+               torch.tensor(h_ab_4p, dtype=torch.double,device=self.device).reshape(4 * 2)
 
     def __len__(self):
         return len(self.file_paths)
@@ -132,7 +133,7 @@ def getAerialData():
     pass
 
 
-def getResiscData(train_proportion=0.7):
+def getResiscData(train_proportion=0.8,device='cpu'):
     data_base = os.path.join(data_dir, 'NWPU-RESISC45')
     scenes = os.listdir(data_base)
     indices = np.arange(0, 700)
@@ -147,4 +148,4 @@ def getResiscData(train_proportion=0.7):
         for i in range(int(indices.shape[0] * train_proportion), indices.shape[0]):
             img_file = img_files[indices[i]]
             val_files.append(os.path.join(scene, img_file))
-    return ResiscDataset(train_files), ResiscDataset(val_files)
+    return ResiscDataset(train_files,device), ResiscDataset(val_files,device)

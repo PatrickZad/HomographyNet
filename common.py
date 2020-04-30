@@ -16,8 +16,8 @@ class CommonCfg:
         self.fc_in = None
         self.dropout_prob = (0.5, 0.5)
         self.batch_size = 64
-        self.base_lr = 0.005
-        self.lr_decrease = {'factor': 0.1, 'interval': 30000}
+        self.base_lr = 0.0001
+        self.lr_decrease = {'factor': 0.1, 'interval': 50}
         self.momentum = 0.9
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.max_epoch = 256
@@ -38,8 +38,8 @@ class CommonCfg:
 class Cfg128(CommonCfg):
     def __init__(self):
         super(Cfg128, self).__init__(128, 128)
-        self.conv_out_channels = [self.in_channel] + [64, 64, 64, 64, 128, 128, 128, 128]
-        self.fc_in = (self.height_in // 16) * (self.width_in // 16) * self.conv_out_channels[-1]
+        self.conv_channels = [self.in_channel] + [64, 64, 64, 64, 128, 128, 128, 128]
+        self.fc_in = (self.height_in // 8) * (self.width_in // 8) * self.conv_channels[-1]
 
 
 class Cfg256(CommonCfg):

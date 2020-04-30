@@ -4,8 +4,8 @@ import torch
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-def net_block(in_channel, out_channel, index):
-    if index % 2 == 0:
+def net_block(in_channel, out_channel, pooling=False):
+    if not pooling:
         return nn.Sequential(nn.Conv2d(in_channel, out_channel, kernel_size=3, stride=1, padding=1),
                              nn.BatchNorm2d(out_channel),
                              nn.ReLU(True))
@@ -20,10 +20,13 @@ class HomographyNet(nn.Module):
     def __init__(self, cfg):
         super(HomographyNet, self).__init__()
         self.cfg = cfg
-        conv_nums = len(cfg.conv_out_channels)
-        self.conv_component = nn.Sequential(*[net_block(cfg.conv_out_channels[i],
-                                                        cfg.conv_out_channels[i + 1], i)
-                                              for i in range(conv_nums - 1)])
+        conv_nums = len(cfg.conv_channels)-1
+        pooling_list = [False] * conv_nums
+        for i in range(1, conv_nums - 1, 2):
+            pooling_list[i] = True
+        self.conv_component = nn.Sequential(*[net_block(cfg.conv_channels[i],
+                                                        cfg.conv_channels[i + 1], pooling_list[i])
+                                              for i in range(conv_nums)])
         self.conv_component = nn.Sequential(self.conv_component, nn.Dropout2d(cfg.dropout_prob[0]))
         self.fc1_2 = nn.Sequential(nn.Linear(cfg.fc_in, cfg.fc_outs[0]),
                                    nn.Dropout2d(cfg.dropout_prob[1]),
