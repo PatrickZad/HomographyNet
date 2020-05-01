@@ -15,14 +15,15 @@ class CommonCfg:
         self.conv_channels = None
         self.fc_in = None
         self.dropout_prob = (0.5, 0.5)
-        self.batch_size = 64
+        self.batch_size = 128
         self.base_lr = 0.0001
-        self.lr_decrease = {'factor': 0.1, 'interval': 50}
+        self.lr_decrease = {'factor': 0.1, 'interval': 20}
         self.momentum = 0.9
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.max_epoch = 256
         self.save_period = 10
         self.log_period = 10
+        self.multi_gpu = False
 
     def get_optimizer(self, params):
         return torch.optim.SGD(params, lr=self.base_lr, momentum=self.momentum)
@@ -83,20 +84,6 @@ count = 1
 
 def sk_warpcrop(img, homo_mat, warpcrop_box):
     global count
-    '''corners = np.float32([[0, 0], [img.shape[1] - 1, 0],
-                          [img.shape[1] - 1, img.shape[0] - 1],
-                          [0, img.shape[0] - 1]])
-    warpped_corners = transform.matrix_transform(corners, homo_mat)
-    warp_ref = np.matmul(np.concatenate([corners, np.ones((4, 1))], axis=-1), homo_mat.T)
-    warp_ref /= warp_ref[:, 2:]
-    trans_x, trans_y = -warpped_corners[:, 0].min(), -warpped_corners[:, 1].min()
-    w, h = int(warpped_corners[:, 0].max() - warpped_corners[:, 0].min() + 1), \
-           int(warpped_corners[:, 1].max() - warpped_corners[:, 1].min() + 1)
-    translation_corner = (warpcrop_box[0] + trans_x, warpcrop_box[1] + trans_y)
-    translation_mat = transform.SimilarityTransform(translation=(trans_x, trans_y)).params
-    warpped_img = transform.warp(img, np.matmul(translation_mat, homo_mat), output_shape=(h, w))
-    crop = warpped_img[translation_corner[1]:translation_corner[1] + warpcrop_box[3],
-           translation_corner[0]:translation_corner[0] + warpcrop_box[2], :].copy()'''
     warpped_img = transform.warp(img, homo_mat)
     crop = warpped_img[warpcrop_box[1]:warpcrop_box[1] + warpcrop_box[3],
            warpcrop_box[0]:warpcrop_box[0] + warpcrop_box[2], :].copy()
