@@ -13,10 +13,10 @@ from metric import MeanAveragePosError
 global ITER
 
 
-def train_from_scratch(cfg):
+def train_from_scratch(cfg,load_binary=None,load_optimizer=False):
+    #TODO load bnary
     global ITER
     ITER = 0
-
     cwd = os.getcwd()
     expr_out = os.path.join(cwd, 'experiments', 'on_resisc45')
     logging.basicConfig(filename=os.path.join(expr_out, 'train_log'),
@@ -25,7 +25,7 @@ def train_from_scratch(cfg):
     logger = logging.getLogger('train_logger')
 
     train_dataset, val_dataset = getResiscData(device=cfg.device)
-    loc_error = MeanAveragePosError((cfg.width_in, cfg.height_in), cfg.device)
+    loc_error = MeanAveragePosError((cfg.width_in, cfg.height_in), device=cfg.device)
     homog_net = model.HomographyNet(cfg)
     train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=cfg.batch_size, shuffle=True)
