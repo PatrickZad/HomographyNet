@@ -6,12 +6,14 @@ import torch
 
 
 class MeanAveragePosError(Metric):
+
     def __init__(self, in_shape, output_transform=lambda x: x, device='cpu'):
         test_pts_array = np.array([(0, 0), (in_shape[0] - 1, 0), (in_shape[0] - 1, in_shape[1] - 1),
                                    (0, in_shape[1] - 1)])
         self.__test_pts = torch.unsqueeze(torch.tensor(test_pts_array, device=device), 0)
         self.__average_errors = []
         super(MeanAveragePosError, self).__init__(output_transform=output_transform, device=device)
+
 
     @reinit__is_reduced
     def reset(self):

@@ -13,10 +13,10 @@ from metric import MeanAveragePosError
 global ITER
 
 
-def train_from_scratch(cfg):
+def train_from_scratch(cfg,load_binary=None,load_optimizer=False):
+    #TODO load bnary
     global ITER
     ITER = 0
-
     cwd = os.getcwd()
     expr_out = os.path.join(cwd, 'experiments', 'on_resisc45')
     logging.basicConfig(filename=os.path.join(expr_out, 'train_log'),
