@@ -3,3 +3,4 @@
 /.vscode
 *.iml
 /experiments
+/__pycache__
