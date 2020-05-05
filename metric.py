@@ -3,21 +3,22 @@ from ignite.metrics.metric import sync_all_reduce, reinit__is_reduced
 from ignite.exceptions import NotComputableError
 import numpy as np
 import torch
-from skimage import transform
 
 
 class MeanAveragePosError(Metric):
-    def __init__(self, in_shape, outpu_trans=lambda x: x, device='cpu'):
-        test_pts_array = np.array([(0,0),(in_shape[0]-1,0),
-                                   (in_shape[0]-1,in_shape[1]-1),
-                                   (0,in_shape[1]-1)]),
-        self.__test_pts = torch.unsqueeze(torch.tensor(test_pts_array, device=device),dim=0)
+
+    def __init__(self, in_shape, output_transform=lambda x: x, device='cpu'):
+        test_pts_array = np.array([(0, 0), (in_shape[0] - 1, 0), (in_shape[0] - 1, in_shape[1] - 1),
+                                   (0, in_shape[1] - 1)])
+        self.__test_pts = torch.unsqueeze(torch.tensor(test_pts_array, device=device), 0)
         self.__average_errors = []
-        super(MeanAveragePosError, self).__init__(output_transform=outpu_trans, device=device)
+        super(MeanAveragePosError, self).__init__(output_transform=output_transform, device=device)
+
 
     @reinit__is_reduced
     def reset(self):
         self.__average_errors = []
+        super(MeanAveragePosError, self).reset()
 
     @reinit__is_reduced
     def update(self, output):

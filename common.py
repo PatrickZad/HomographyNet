@@ -17,11 +17,11 @@ class CommonCfg:
         self.dropout_prob = (0.5, 0.5)
         self.batch_size = 128
         self.base_lr = 0.0001
-        self.lr_decrease = {'factor': 0.1, 'interval': 20}
+        self.lr_decrease = {'factor': 0.1, 'interval': 10}
         self.momentum = 0.9
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.max_epoch = 256
-        self.save_period = 10
+        self.max_epoch = 200
+        self.save_period = 5
         self.log_period = 10
         self.multi_gpu = False
 
