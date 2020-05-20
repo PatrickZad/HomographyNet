@@ -29,8 +29,8 @@ class CommonCfg:
         return torch.optim.SGD(params, lr=self.base_lr, momentum=self.momentum)
 
     def get_lr_scheduler(self, optimizer, last_epoch=-1):
-        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.lr_decrease['interval'],
-                                               gamma=self.lr_decrease['factor'], last_epoch=last_epoch)
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                               factor=self.lr_decrease['factor'], patience=5)
 
     def get_loss(self):
         return torch.nn.MSELoss()

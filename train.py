@@ -56,14 +56,16 @@ def train_from_scratch(cfg,load_binary=None,load_optimizer=False):
         if len(train_loader) == ITER:
             ITER = 0
 
-    @trainer.on(Events.EPOCH_COMPLETED)
+    '''@trainer.on(Events.EPOCH_COMPLETED)
     def adjust_lr(trainer):
-        scheduler.step()
+        scheduler.step()'''
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         evaluator.run(val_loader)
         metrics = evaluator.state.metrics
+        val_loss=metrics['esti_error']
+        scheduler.step(val_loss)
         logger.info("Validation Results - Epoch: {} Val_loss: {},Loc_error: {}"
                     .format(trainer.state.epoch, metrics['esti_error'], metrics['loc_error']))
         print("Validation Results - Epoch: {} Val_loss: {} Loc_error: {}"
